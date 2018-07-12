@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+     <script src ="jquery-3.3.1.js"> </script>
+    <script src = "socket.io.js"></script>
+    <script>
+        
+        var host;
+        var port;
+        var socket;
+        function println(str){
+            console.log(str);
+            $('#msgBox').append("<p>" + str+ "</p>")
+        }
+        
+        function connectToServer(url){
+                socket = io.connect(url);
+            // socket.on은  서버와 접속
+                //response.sender로 설정
+                socket.on('connect',function(){
+                    println("server socket에 연결됨 : " + url)
+                    //서버로부터 메세지받음
+                    socket.on('message', function(response){
+                        println( response.sender+" >>>  " +response.data)
+                    })
+                });
+                
+            socket.on('disconnect', function(){
+                println('서버와 연결이 끊어졌다.');
+            });
+            //responseJSON.recepient로 설정
+            socket.on('response', function(responseJSON){
+                console.log("서버로부터 잘전달받았다." );
+                println( responseJSON.recepient + ' >>> '+ responseJSON.message);
+            });
+                
+        }
+        
+        $(document).ready(function(){
+            $("#connectBtn").click(function(){
+                println('connectBtn을 클릭함');
+                //host정보와 port정보를 이용해서 접속한다.
+                host = $('#host').val();
+                port = $('#port').val();
+                var url = "http://" + host+":"+port;
+                
+                //서버소켓에 연결
+               connectToServer(url);
+            
+            });
+            
+            $('#sendBtn').click(function() {
+                var sender = $('#sender').val();
+                var recepient = $('#recepient').val();
+                var data = $('#data').val();
+                
+                var sendMsg = {
+                    sender:sender,
+                    recepient:recepient,
+                    data:data,
+                    command:'chat',
+                    type:'text'
+                };
+                socket.emit('message', sendMsg);
+                
+            });
+            
+            $('#id').keyup(function(){
+                $('#sender').val($(this).val());
+            });
+            
+            $('#loginBtn').click(function(){
+                console.log("loginBtn 클릭")
+                var id = $("#id").val();
+                var password =$("#password").val();
+                var alias = $("#alias").val();
+                var today = $("#today").val();
+                
+                var userObj = {
+                    id :id, password:password, alias:alias, today:today
+                };
+                console.log("사용자 정보 ===>  " + JSON.stringify(userObj));
+                
+                if(socket == undefined){
+                    alert('먼저 소켓을 먼저 연결하세요.');
+                    return;
+                }
+                socket.emit('login', userObj);
+            })
+            
+            
+        });
+    
+    </script>
+</head>
+<body>
+    <h1> 채팅 클라이언트</h1>
+    <hr>
+    <p>[접속하기]</p>
+    <div>
+        <input type = "text" id = "host" name ="host" value ="localhost">
+        <input type = "text" id = "port" name ="port" value = "3000">
+        <input type = "button" id ="connectBtn" value ="연결하기">
+    </div>
+    <hr>
+     <div>
+        <p>[사용자 로그인 하기]</p>
+         <input type ="text" id = "id" name ="id" value="user01">
+         <input type ="password" id = "password" name ="password" value="12345">
+         <br>
+         <input type ="text" id = "alias" name ="alias" value="방탄소년단">
+         <input type ="text" id = "today" name ="today" value="장마비가온다">
+         <br>
+         <input type ="button" id ="loginBtn" value="로그인">
+         <input type ="button" id ="logoutBtn" value="로그아웃">
+         
+         
+     </div>
+     <hr>
+     <div>
+         <p>[메세지 전송]</p>
+      <input type = "text" id = "sender" name = "sender" value="user01"><br>
+      <input type = "text" id = "recepient" name = "recepient" value="user02"><br>
+      <input type = "text" id = "data" name = "data" value="Hi Hello">
+       <input type="button" id="sendBtn" value="메세지전송">
+    </div>
+    <hr>
+    <div id = "msgBox" style = "height: 200px; overflow: scroll" >
+        [전달받은 메세지]
+        
+    </div>
+</body>
+</html>
